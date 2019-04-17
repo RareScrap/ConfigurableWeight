@@ -1,0 +1,16 @@
+[
+{
+  "modid": "configurableweight",
+  "name": "Configurable Weight System",
+  "description": "Allow you to set items weight in config. Also slowdown player if overloaded. Player max weight = 5 + 10*lvl.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["RareScrap"],
+  "credits": "The Forge and FML guys",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": ["weightapi"]
+}
+]
