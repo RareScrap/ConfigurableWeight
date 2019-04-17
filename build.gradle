@@ -23,9 +23,9 @@ repositories {
 
 apply plugin: 'forge'
 
-version = "1.0"
-group= "ru.rarescrap.simpleweightsystem" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "simpleweightsystem"
+version = "0.0.1"
+group= "ru.rarescrap.configurableweight" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "configurableweight"
 
 minecraft {
     version = "1.7.10-10.13.4.1614-1.7.10"
