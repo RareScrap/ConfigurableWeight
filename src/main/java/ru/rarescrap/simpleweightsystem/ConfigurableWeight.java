@@ -41,7 +41,7 @@ import static ru.rarescrap.simpleweightsystem.Utils.drawCenteredStringWithoutSha
 public class ConfigurableWeight
 {
     public static final String MODID = "configurableweight";
-    public static final String VERSION = "0.0.1";
+    public static final String VERSION = "0.2.0";
 
     public static final SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(MODID.toLowerCase());
 
