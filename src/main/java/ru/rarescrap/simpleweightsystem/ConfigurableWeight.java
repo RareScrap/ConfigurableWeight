@@ -6,7 +6,6 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -25,9 +24,11 @@ import net.minecraft.potion.Potion;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.event.entity.player.PlayerOpenContainerEvent;
 import ru.rarescrap.weightapi.WeightRegistry;
 import ru.rarescrap.weightapi.event.WeightChangedEvent;
 
@@ -62,10 +63,6 @@ public class ConfigurableWeight
         else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
     }
 
-    @Mod.EventHandler
-    public void onServerStop(FMLServerStoppingEvent event) {
-        PlayerWeightTracker.clearTrackers();
-    }
 
     // Высылаем клиенту таблицу весов, если тот подключился
     @SubscribeEvent
@@ -76,12 +73,30 @@ public class ConfigurableWeight
             NETWORK.sendTo(new ConfigurableWeightProvider.SyncMessage(configurableWeightProvider), (EntityPlayerMP) event.player);
     }
 
+    // Присоединяем игрокам трекер инвентаря
+    @SubscribeEvent
+    public void onEntityConstructing(EntityEvent.EntityConstructing event) {
+        if (event.entity instanceof EntityPlayer && PlayerWeightTracker.get((EntityPlayer) event.entity) == null)
+            PlayerWeightTracker.register((EntityPlayer) event.entity);
+    }
+
+    // И присоединяем его к открытым контейнерам
+    @SubscribeEvent
+    public void onPlayerOpenContainer(PlayerOpenContainerEvent e) {
+        PlayerWeightTracker tracker = PlayerWeightTracker.get(e.entityPlayer);
+        /* Довольно узкое место. Дело в том, что PlayerOpenContainerEvent не совсем соотстветвует своему
+         * описанию. Это скорее "CanInteractWithContainerEvent". Это из-за того, что этот евент по сути
+         * выбрасывается каждый тик. А открываться контейнер каждый тик не может по логике.
+         * Однако и этот "ущербный" эвент можно использовать в нужном ключе (в данном случае, для присоединения
+         * слушателя изменения инвентаря (ICrafting). Только нужно позаботиться, чтобы он не добавлялся дважды. */
+        if (!e.entityPlayer.openContainer.crafters.contains(tracker))
+            tracker.attachListener(); // TODO: а если canInteractWith == false?
+    }
+
     @SubscribeEvent
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
         if (event.entity instanceof EntityPlayer && !event.world.isRemote) {
             EntityPlayer player = (EntityPlayer) event.entity;
-            PlayerWeightTracker.registerTracker(player);
-
             if (WeightRegistry.getWeightProvider().isOverloaded(player.inventory, player)) {
                 player.removePotionEffect(Potion.moveSlowdown.id); // TODO: Без хуков лучше не сделаешь. По крайней мере, я не знаю как.
                 player.addPotionEffect(new EndlessPotionEffect(Potion.moveSlowdown.id, 2));
