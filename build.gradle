@@ -26,9 +26,10 @@ apply plugin: 'forge'
 version = "0.0.1"
 group= "ru.rarescrap.configurableweight" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "configurableweight"
+def shortMCVersion = "1.7.10"
 
 minecraft {
-    version = "1.7.10-10.13.4.1614-1.7.10"
+    version = "$shortMCVersion-10.13.4.1614-1.7.10"
     runDir = "eclipse"
 }
 
@@ -42,7 +43,7 @@ dependencies {
     //compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
     //compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env
 
-    compile 'ru.rarescrap.weightapi:weightapi:0.2.0_1.7.10'
+    compile "ru.rarescrap.weightapi:weightapi:0.2.0_$shortMCVersion"
     
     // for more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
