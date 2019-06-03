@@ -76,14 +76,14 @@ public class ConfigurableWeight
     // Присоединяем игрокам трекер инвентаря
     @SubscribeEvent
     public void onEntityConstructing(EntityEvent.EntityConstructing event) {
-        if (event.entity instanceof EntityPlayer && PlayerWeightTracker.get((EntityPlayer) event.entity) == null)
-            PlayerWeightTracker.register((EntityPlayer) event.entity);
+        if (event.entity instanceof EntityPlayerMP && PlayerWeightTracker.get((EntityPlayerMP) event.entity) == null)
+            PlayerWeightTracker.register((EntityPlayerMP) event.entity);
     }
 
     // И присоединяем его к открытым контейнерам
     @SubscribeEvent
     public void onPlayerOpenContainer(PlayerOpenContainerEvent e) {
-        PlayerWeightTracker tracker = PlayerWeightTracker.get(e.entityPlayer);
+        PlayerWeightTracker tracker = PlayerWeightTracker.get((EntityPlayerMP) e.entityPlayer);
         /* Довольно узкое место. Дело в том, что PlayerOpenContainerEvent не совсем соотстветвует своему
          * описанию. Это скорее "CanInteractWithContainerEvent". Это из-за того, что этот евент по сути
          * выбрасывается каждый тик. А открываться контейнер каждый тик не может по логике.
@@ -98,7 +98,8 @@ public class ConfigurableWeight
         if (event.entity instanceof EntityPlayer && !event.world.isRemote) {
             EntityPlayer player = (EntityPlayer) event.entity;
             if (WeightRegistry.getWeightProvider().isOverloaded(player.inventory, player)) {
-                player.removePotionEffect(Potion.moveSlowdown.id); // TODO: Без хуков лучше не сделаешь. По крайней мере, я не знаю как.
+                // Minecraft не умеет сохранять кастомный PotionEffect и при загрузке наложит ванильный эффект
+                player.removePotionEffect(Potion.moveSlowdown.id);
                 player.addPotionEffect(new EndlessPotionEffect(Potion.moveSlowdown.id, 2));
             }
         }

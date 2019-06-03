@@ -2,6 +2,7 @@ package ru.rarescrap.simpleweightsystem;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ICrafting;
 import net.minecraft.item.ItemStack;
@@ -15,17 +16,18 @@ import ru.rarescrap.weightapi.event.WeightChangedEvent;
 import java.util.List;
 
 /**
- * Механизм, отслеживающий изменения инвентаря игрока
+ * Механизм, отслеживающий изменения инвентаря игрока.
+ * Работает только на сервере, т.к. пока не имеет необходиости работать на клиенте.
  */
 public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties {
     private static final String EXTENDED_ENTITY_TAG = "weight_tracker_data";
 
     /** Игрок, инвентарь которого отслеживается */
-    private EntityPlayer entityPlayer;
+    private EntityPlayerMP entityPlayer;
     /** Вес {@link EntityPlayer#inventory} до изменения его содержмого */
     private double prevWeight = 0D;
 
-    private PlayerWeightTracker(EntityPlayer entityPlayer) {
+    private PlayerWeightTracker(EntityPlayerMP entityPlayer) {
         this.entityPlayer = entityPlayer;
     }
 
@@ -61,13 +63,13 @@ public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties
         entityPlayer.openContainer.addCraftingToCrafters(this); // TODO: А что с удалением?
     }
 
-    public static final void register(EntityPlayer player) {
+    public static final void register(EntityPlayerMP player) {
         PlayerWeightTracker weightData = new PlayerWeightTracker(player);
         player.registerExtendedProperties(EXTENDED_ENTITY_TAG, weightData);
         weightData.init(player, player.worldObj);
     }
 
-    public static final PlayerWeightTracker get(EntityPlayer player) {
+    public static final PlayerWeightTracker get(EntityPlayerMP player) {
         return (PlayerWeightTracker) player.getExtendedProperties(EXTENDED_ENTITY_TAG); // TODO: Добавить Exception, если null
     }
 
@@ -87,6 +89,6 @@ public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties
 
     @Override
     public void init(Entity entity, World world) {
-        entityPlayer = (EntityPlayer) entity; // Обновим игрока, дабы в IEEP хранился актуальный игрок
+        entityPlayer = (EntityPlayerMP) entity; // Обновим игрока, дабы в IEEP хранился актуальный игрок
     }
 }
