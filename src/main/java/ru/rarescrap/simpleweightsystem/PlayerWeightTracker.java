@@ -1,5 +1,6 @@
 package ru.rarescrap.simpleweightsystem;
 
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -12,6 +13,7 @@ import net.minecraftforge.common.IExtendedEntityProperties;
 import net.minecraftforge.common.MinecraftForge;
 import ru.rarescrap.weightapi.WeightRegistry;
 import ru.rarescrap.weightapi.event.WeightChangedEvent;
+import ru.rarescrap.weightapi.event.WeightProviderChangedEvent;
 
 import java.util.List;
 
@@ -40,17 +42,7 @@ public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties
 
     @Override
     public void sendSlotContents(Container p_71111_1_, int p_71111_2_, ItemStack p_71111_3_) {
-        double currentWeight = getCurrentWeight();
-        WeightChangedEvent event = new WeightChangedEvent(
-                entityPlayer.inventory,
-                prevWeight,
-                currentWeight,
-                WeightRegistry.getWeightProvider().isOverloaded(entityPlayer.inventory, entityPlayer),
-                entityPlayer
-        );
-        // Шлем эвент об изменении веса инвентаря TODO: Проверка на prevWeight != currentWeight
-        MinecraftForge.EVENT_BUS.post(event);
-        prevWeight = currentWeight; // Обновляем предыдущий вес
+        if (WeightRegistry.getActiveWeightProvider() != null) onInventoryWeightChanged();
     }
 
     @Override
@@ -67,6 +59,8 @@ public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties
         PlayerWeightTracker weightData = new PlayerWeightTracker(player);
         player.registerExtendedProperties(EXTENDED_ENTITY_TAG, weightData);
         weightData.init(player, player.worldObj);
+
+        MinecraftForge.EVENT_BUS.register(get(player));
     }
 
     public static final PlayerWeightTracker get(EntityPlayerMP player) {
@@ -77,6 +71,21 @@ public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties
         if (WeightRegistry.getActiveWeightProvider() != null)
             prevWeight = WeightRegistry.getActiveWeightProvider().getWeight(entityPlayer.inventory, entityPlayer);
     }
+
+    public void onInventoryWeightChanged() {
+        double currentWeight = getCurrentWeight();
+        WeightChangedEvent event = new WeightChangedEvent(
+                entityPlayer.inventory,
+                prevWeight,
+                currentWeight,
+                WeightRegistry.getActiveWeightProvider().isOverloaded(entityPlayer.inventory, entityPlayer),
+                entityPlayer
+        );
+        // Шлем эвент об изменении веса инвентаря TODO: Проверка на prevWeight != currentWeight
+        MinecraftForge.EVENT_BUS.post(event);
+        prevWeight = currentWeight; // Обновляем предыдущий вес
+    }
+
 
     public double getCurrentWeight() {
         return WeightRegistry.getActiveWeightProvider().getWeight(entityPlayer.inventory, entityPlayer);
@@ -91,5 +100,13 @@ public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties
     @Override
     public void init(Entity entity, World world) {
         entityPlayer = (EntityPlayerMP) entity; // Обновим игрока, дабы в IEEP хранился актуальный игрок
+    }
+
+    @SubscribeEvent
+    public void onWeightProviderChaged(WeightProviderChangedEvent.Post event) {
+        if (event.currentProvider != null) {
+            prevWeight = 0; // Раз система поменялась, то и предыдущего веса пока нет
+            onInventoryWeightChanged();
+        }
     }
 }
