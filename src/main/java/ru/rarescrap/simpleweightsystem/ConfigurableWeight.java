@@ -59,7 +59,7 @@ public class ConfigurableWeight
     @EventHandler
     public void onServerStart(FMLServerAboutToStartEvent event) {
         File configFile = new File(Loader.instance().getConfigDir(), MODID+".cfg");
-        if (configFile.exists()) WeightRegistry.registerWeightProvider(configurableWeightProvider = new ConfigurableWeightProvider(configFile));
+        if (configFile.exists()) WeightRegistry.registerWeightProvider(MODID, configurableWeightProvider = new ConfigurableWeightProvider(configFile));
         else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
     }
 
@@ -97,7 +97,7 @@ public class ConfigurableWeight
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
         if (event.entity instanceof EntityPlayer && !event.world.isRemote) {
             EntityPlayer player = (EntityPlayer) event.entity;
-            if (WeightRegistry.getWeightProvider().isOverloaded(player.inventory, player)) {
+            if (WeightRegistry.getActiveWeightProvider() != null && WeightRegistry.getActiveWeightProvider().isOverloaded(player.inventory, player)) {
                 // Minecraft не умеет сохранять кастомный PotionEffect и при загрузке наложит ванильный эффект
                 player.removePotionEffect(Potion.moveSlowdown.id);
                 player.addPotionEffect(new EndlessPotionEffect(Potion.moveSlowdown.id, 2));
@@ -108,12 +108,14 @@ public class ConfigurableWeight
     // После достижения предела веса игрок не может подбирать предметы
     @SubscribeEvent
     public void onPickupItem(EntityItemPickupEvent event) {
+        if (WeightRegistry.getActiveWeightProvider() == null) return;
+
         EntityPlayer player = event.entityPlayer;
-        boolean isOverloaded = WeightRegistry.getWeightProvider().isOverloaded(player.inventory, player);
+        boolean isOverloaded = WeightRegistry.getActiveWeightProvider().isOverloaded(player.inventory, player);
         if (isOverloaded) event.setCanceled(true);
         else {
             ItemStack itemStack = event.item.getEntityItem();
-            double freeSpace = WeightRegistry.getWeightProvider().getFreeSpace(player.inventory, player);
+            double freeSpace = WeightRegistry.getActiveWeightProvider().getFreeSpace(player.inventory, player);
             int takenItems = calculateAllowingStackSize(itemStack, player.inventory, player, freeSpace);
             if (takenItems > 0) {
                 itemStack.stackSize -= takenItems;
@@ -146,26 +148,29 @@ public class ConfigurableWeight
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public void onRenderTooltip(ItemTooltipEvent event) {
+        if (WeightRegistry.getActiveWeightProvider() == null) return;
+
         // F3+H включает подробный тултип. В добавок к этому я буду выводить уникальные
         // идентификаторы итемов, чтобы юзеру было проще заполнять конфиг с весом.
         if (event.showAdvancedItemTooltips)
             event.toolTip.add(GameRegistry.findUniqueIdentifierFor(event.itemStack.getItem()).toString());
 
-        double weight = WeightRegistry.getWeightProvider().getWeight(event.itemStack, event.entityPlayer.inventory, event.entityPlayer);
+        double weight = WeightRegistry.getActiveWeightProvider().getWeight(event.itemStack, event.entityPlayer.inventory, event.entityPlayer);
         event.toolTip.add(StatCollector.translateToLocalFormatted("gui.itemstack_weight", weight));
     }
 
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public void renderWeight(GuiScreenEvent.DrawScreenEvent event) {
-        if (!(event.gui instanceof InventoryEffectRenderer)) return;
+        if (WeightRegistry.getActiveWeightProvider() == null
+                || !(event.gui instanceof InventoryEffectRenderer)) return;
 
         InventoryEffectRenderer guiInventory = (InventoryEffectRenderer) event.gui;
         EntityPlayer player = Minecraft.getMinecraft().thePlayer;
 
-        double currentWeight = WeightRegistry.getWeightProvider().getWeight(player.inventory, player);
-        double maxWeight = WeightRegistry.getWeightProvider().getMaxWeight(player.inventory, player);
-        boolean isOverloaded = WeightRegistry.getWeightProvider().isOverloaded(player.inventory, player);
+        double currentWeight = WeightRegistry.getActiveWeightProvider().getWeight(player.inventory, player);
+        double maxWeight = WeightRegistry.getActiveWeightProvider().getMaxWeight(player.inventory, player);
+        boolean isOverloaded = WeightRegistry.getActiveWeightProvider().isOverloaded(player.inventory, player);
 
         String str = StatCollector.translateToLocalFormatted("gui.inventory_weight", currentWeight, maxWeight);
         int color = isOverloaded ? 0xDB1818 : 4210752;

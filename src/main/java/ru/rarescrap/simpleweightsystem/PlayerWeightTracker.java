@@ -74,11 +74,12 @@ public class PlayerWeightTracker implements ICrafting, IExtendedEntityProperties
     }
 
     public void updatePrevWeight() {
-        prevWeight = WeightRegistry.getWeightProvider().getWeight(entityPlayer.inventory, entityPlayer);
+        if (WeightRegistry.getActiveWeightProvider() != null)
+            prevWeight = WeightRegistry.getActiveWeightProvider().getWeight(entityPlayer.inventory, entityPlayer);
     }
 
     public double getCurrentWeight() {
-        return WeightRegistry.getWeightProvider().getWeight(entityPlayer.inventory, entityPlayer);
+        return WeightRegistry.getActiveWeightProvider().getWeight(entityPlayer.inventory, entityPlayer);
     }
 
     @Override
