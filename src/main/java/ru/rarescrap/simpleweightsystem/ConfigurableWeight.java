@@ -59,8 +59,10 @@ public class ConfigurableWeight
     @EventHandler
     public void onServerStart(FMLServerAboutToStartEvent event) {
         File configFile = new File(Loader.instance().getConfigDir(), MODID+".cfg");
-        if (configFile.exists()) WeightRegistry.registerWeightProvider(MODID, configurableWeightProvider = new ConfigurableWeightProvider(configFile));
-        else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
+        if (configFile.exists()) {
+            WeightRegistry.registerWeightProvider(MODID, configurableWeightProvider = new ConfigurableWeightProvider(configFile));
+            FMLCommonHandler.instance().bus().register(configurableWeightProvider); // TODO: Разрегистрировать при удалении/замене в WeightRegistry
+        } else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
     }
 
 
