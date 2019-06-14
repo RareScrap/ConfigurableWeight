@@ -139,15 +139,12 @@ public class ConfigurableWeightProvider implements IWeightProvider {
      * Пакет, доставляющий таблицу весов на клиент
      */
     public static class SyncMessage implements IMessage {
-        @SideOnly(Side.CLIENT)
-        ConfigurableWeightProvider clientWeightProvider;
-        ConfigurableWeightProvider serverWeightProvider;
+        ConfigurableWeightProvider weightProvider;
 
-        // for reflection new instance
-        public SyncMessage() {}
+        public SyncMessage() {} // for reflection newInstance()
 
         public SyncMessage(ConfigurableWeightProvider serverWeightProvider) {
-            this.serverWeightProvider = serverWeightProvider;
+            this.weightProvider = serverWeightProvider;
         }
 
         @Override
@@ -160,28 +157,26 @@ public class ConfigurableWeightProvider implements IWeightProvider {
                 weightStorage.put(item, weight);
             }
             double defaultWeight = buf.readDouble();
-            clientWeightProvider = new ConfigurableWeightProvider(weightStorage, defaultWeight);
+            weightProvider = new ConfigurableWeightProvider(weightStorage, defaultWeight);
         }
 
         @Override
         public void toBytes(ByteBuf buf) {
-            ByteBufUtils.writeVarInt(buf, serverWeightProvider.weightStorage.size(), 1);
-            for (Map.Entry<Item, Double> entry : serverWeightProvider.weightStorage.entrySet()) {
+            ByteBufUtils.writeVarInt(buf, weightProvider.weightStorage.size(), 1);
+            for (Map.Entry<Item, Double> entry : weightProvider.weightStorage.entrySet()) {
                 ByteBufUtils.writeVarShort(buf, Item.getIdFromItem(entry.getKey()));
                 buf.writeDouble(entry.getValue());
             }
-            buf.writeDouble(serverWeightProvider.defaultWeight);
+            buf.writeDouble(weightProvider.defaultWeight);
         }
     }
 
     public static class MessageHandler implements IMessageHandler<SyncMessage, IMessage> {
-
         @SideOnly(Side.CLIENT)
         @Override
         public IMessage onMessage(SyncMessage message, MessageContext ctx) {
-            if (WeightRegistry.getWeightProvider() == null ||
-                    WeightRegistry.getWeightProvider() != ConfigurableWeight.configurableWeightProvider) // Эта проверку нужна, когда игрок в сингле
-                WeightRegistry.registerWeightProvider(message.clientWeightProvider);
+            WeightRegistry.registerWeightProvider(MODID, message.weightProvider);
+            WeightRegistry.activateWeightProvider(MODID, Minecraft.getMinecraft().theWorld);
             return null;
         }
     }
