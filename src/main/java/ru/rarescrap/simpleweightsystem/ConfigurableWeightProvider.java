@@ -30,13 +30,18 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ru.rarescrap.simpleweightsystem.ConfigurableWeight.MODID;
 import static ru.rarescrap.simpleweightsystem.ConfigurableWeight.NETWORK;
 
+/**
+ * Система веса с возможностью задавать вес каждого предмета через конфигурационный файл.
+ * За счет синхронизации с клиентом может работать также на стороне клиенте без доступа к серверу.
+ */
 public class ConfigurableWeightProvider implements IWeightProvider {
 
-    private Configuration config;
-    private Map<Item, Double> weightStorage = new HashMap<Item, Double>();
-    private double defaultWeight;
+    private Configuration config; // TODO: ненужно поле
+    protected Map<Item, Double> weightStorage = new HashMap<Item, Double>();
+    protected double defaultWeight;
 
     @SideOnly(Side.CLIENT)
     public ConfigurableWeightProvider(Map<Item, Double> weightStorage, double defaultWeight) {
@@ -49,7 +54,7 @@ public class ConfigurableWeightProvider implements IWeightProvider {
         readConfig();
     }
 
-    private void readConfig() {
+    protected void readConfig() {
         defaultWeight = config.get("default", "weight", 1).getDouble();
         for (String categoryName : config.getCategoryNames()) {
             // Обрабатываем категорию с дефолтными настройками
@@ -64,7 +69,7 @@ public class ConfigurableWeightProvider implements IWeightProvider {
         }
     }
 
-    private void readItems(ConfigCategory itemCategory) {
+    protected void readItems(ConfigCategory itemCategory) {
         for (Property itemProperty : itemCategory.getOrderedValues()) {
             Item item = GameRegistry.findItem(itemCategory.getName(), itemProperty.getName());
             if (item == null) throw new RuntimeException("There no item with name \"" + itemProperty.getName() + "\""); // Чтобы юзеру было понятнее
