@@ -1,7 +1,5 @@
 package ru.rarescrap.simpleweightsystem;
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -10,14 +8,13 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
@@ -129,15 +126,9 @@ public class ConfigurableWeightProvider implements IWeightProvider {
         return event.maxWeight;
     }
 
-    // Высылаем клиенту таблицу весов, если тот подключился
-    @SubscribeEvent
-    public void onClientConectToServer(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!event.player.worldObj.isRemote
-                // Если игрок в одиноче - не высылаем пакет, т.к. клиентский и серверный поток
-                // работают на одной машине и указывают на одно место в памяти
-                && (MinecraftServer.getServer().isDedicatedServer() || ((IntegratedServer) MinecraftServer.getServer()).getPublic())
-                && WeightRegistry.getActiveWeightProvider() instanceof ConfigurableWeightProvider)
-            NETWORK.sendTo(new ConfigurableWeightProvider.SyncMessage(this), (EntityPlayerMP) event.player);
+    @Override
+    public void sync(EntityPlayerMP player) {
+        NETWORK.sendTo(new SyncMessage(this), player);
     }
 
     /**
