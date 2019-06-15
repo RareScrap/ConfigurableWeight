@@ -7,7 +7,6 @@ import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -63,7 +62,6 @@ public class ConfigurableWeight
             WeightRegistry.registerWeightProvider(MODID, configurableWeightProvider = new ConfigurableWeightProvider(configFile));
             FMLCommonHandler.instance().bus().register(configurableWeightProvider); // TODO: Разрегистрировать при удалении/замене в WeightRegistry
         } else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
-    }
 
 
     // Высылаем клиенту таблицу весов, если тот подключился
@@ -97,9 +95,10 @@ public class ConfigurableWeight
 
     @SubscribeEvent
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
-        if (event.entity instanceof EntityPlayer && !event.world.isRemote) {
+        if (!event.world.isRemote && event.entity instanceof EntityPlayer
+                && WeightRegistry.getActiveWeightProvider() instanceof ConfigurableWeightProvider) {
             EntityPlayer player = (EntityPlayer) event.entity;
-            if (WeightRegistry.getActiveWeightProvider() != null && WeightRegistry.getActiveWeightProvider().isOverloaded(player.inventory, player)) {
+            if (WeightRegistry.getActiveWeightProvider().isOverloaded(player.inventory, player)) {
                 // Minecraft не умеет сохранять кастомный PotionEffect и при загрузке наложит ванильный эффект
                 player.removePotionEffect(Potion.moveSlowdown.id);
                 player.addPotionEffect(new EndlessPotionEffect(Potion.moveSlowdown.id, 2));
@@ -110,7 +109,7 @@ public class ConfigurableWeight
     // После достижения предела веса игрок не может подбирать предметы
     @SubscribeEvent
     public void onPickupItem(EntityItemPickupEvent event) {
-        if (WeightRegistry.getActiveWeightProvider() == null) return;
+        if (!(WeightRegistry.getActiveWeightProvider() instanceof ConfigurableWeightProvider)) return;
 
         EntityPlayer player = event.entityPlayer;
         boolean isOverloaded = WeightRegistry.getActiveWeightProvider().isOverloaded(player.inventory, player);
@@ -130,7 +129,8 @@ public class ConfigurableWeight
 
     @SubscribeEvent
     public void onOverload(WeightChangedEvent event) {
-        if (event.entity.worldObj.isRemote || !(event.entity instanceof EntityPlayer)) return;
+        if (event.entity.worldObj.isRemote || !(event.entity instanceof EntityPlayer)
+                || !(WeightRegistry.getActiveWeightProvider() instanceof ConfigurableWeightProvider)) return;
 
         EntityPlayer player = (EntityPlayer) event.entity;
         // Флаг, обозначающий что на игрока уже наложен бесконечный эффект замедления
@@ -150,7 +150,7 @@ public class ConfigurableWeight
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public void onRenderTooltip(ItemTooltipEvent event) {
-        if (WeightRegistry.getActiveWeightProvider() == null) return;
+        if (!(WeightRegistry.getActiveWeightProvider() instanceof ConfigurableWeightProvider)) return;
 
         // F3+H включает подробный тултип. В добавок к этому я буду выводить уникальные
         // идентификаторы итемов, чтобы юзеру было проще заполнять конфиг с весом.
@@ -164,7 +164,7 @@ public class ConfigurableWeight
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public void renderWeight(GuiScreenEvent.DrawScreenEvent event) {
-        if (WeightRegistry.getActiveWeightProvider() == null
+        if (!(WeightRegistry.getActiveWeightProvider() instanceof ConfigurableWeightProvider) // TODO: Отключаемый в конфиге рендер. Раз другие моды могут предоставлять собственный рендер веса, то каждый следует делать отключаемым. Боюсь, это самый лучший выход.
                 || !(event.gui instanceof InventoryEffectRenderer)) return;
 
         InventoryEffectRenderer guiInventory = (InventoryEffectRenderer) event.gui;
