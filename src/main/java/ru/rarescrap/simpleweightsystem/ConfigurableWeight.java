@@ -143,6 +143,8 @@ public class ConfigurableWeight
             player.addPotionEffect(new EndlessPotionEffect(Potion.moveSlowdown.id, 2));
         } else if (!event.isOverloaded && isSlowdown) {
             // Удаляем бесконечный эффект замедения
+            EndlessPotionEffect endlessPotionEffect = (EndlessPotionEffect) player.getActivePotionEffect(Potion.moveSlowdown);
+            MinecraftForge.EVENT_BUS.unregister(endlessPotionEffect);
             player.removePotionEffect(Potion.moveSlowdown.id);
         }
     }
