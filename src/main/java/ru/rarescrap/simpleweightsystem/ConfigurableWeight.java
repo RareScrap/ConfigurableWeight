@@ -36,7 +36,7 @@ import java.io.File;
 import static ru.rarescrap.simpleweightsystem.Utils.calculateAllowingStackSize;
 import static ru.rarescrap.simpleweightsystem.Utils.drawCenteredStringWithoutShadow;
 
-@Mod(modid = ConfigurableWeight.MODID, version = ConfigurableWeight.VERSION, dependencies = "required-after:weightapi")
+@Mod(modid = ConfigurableWeight.MODID, version = ConfigurableWeight.VERSION, dependencies = "required-after:weightapi@0.4.0")
 public class ConfigurableWeight
 {
     public static final String MODID = "configurableweight";
@@ -63,14 +63,6 @@ public class ConfigurableWeight
             FMLCommonHandler.instance().bus().register(configurableWeightProvider); // TODO: Разрегистрировать при удалении/замене в WeightRegistry
         } else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
 
-
-    // Высылаем клиенту таблицу весов, если тот подключился
-    @SubscribeEvent
-    public void onClientConectToServer(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!event.player.worldObj.isRemote)
-            // Ничего страшного, что в сингле пошлется пакет, который по факту ничего не изменит.
-            // Стоимоть пакета в сингле почти нулевая.
-            NETWORK.sendTo(new ConfigurableWeightProvider.SyncMessage(configurableWeightProvider), (EntityPlayerMP) event.player);
     }
 
     // Присоединяем игрокам трекер инвентаря

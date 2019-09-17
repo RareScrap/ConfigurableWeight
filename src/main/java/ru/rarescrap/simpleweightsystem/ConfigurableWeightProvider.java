@@ -8,7 +8,6 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -27,7 +26,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ru.rarescrap.simpleweightsystem.ConfigurableWeight.MODID;
 import static ru.rarescrap.simpleweightsystem.ConfigurableWeight.NETWORK;
 
 /**
@@ -171,8 +169,7 @@ public class ConfigurableWeightProvider implements IWeightProvider {
         @SideOnly(Side.CLIENT)
         @Override
         public IMessage onMessage(SyncMessage message, MessageContext ctx) {
-            WeightRegistry.registerWeightProvider(MODID, message.weightProvider);
-            WeightRegistry.activateWeightProvider(MODID, Minecraft.getMinecraft().theWorld);
+            WeightRegistry.applyToClient(message.weightProvider);
             return null;
         }
     }
