@@ -30,6 +30,7 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.event.entity.player.PlayerOpenContainerEvent;
 import ru.rarescrap.weightapi.WeightRegistry;
 import ru.rarescrap.weightapi.event.WeightChangedEvent;
+import ru.rarescrap.weightapi.event.WeightProviderChangedEvent;
 
 import java.io.File;
 
@@ -126,8 +127,7 @@ public class ConfigurableWeight
 
         EntityPlayer player = (EntityPlayer) event.entity;
         // Флаг, обозначающий что на игрока уже наложен бесконечный эффект замедления
-        boolean isSlowdown = ((EntityPlayer) event.entity).isPotionActive(Potion.moveSlowdown)
-                && player.getActivePotionEffect(Potion.moveSlowdown) instanceof EndlessPotionEffect;
+        boolean isSlowdown = EndlessPotionEffect.isPotionActive(player, Potion.moveSlowdown);
 
         // Если на игрока уже наложено бесконечное замедление - то добавлять его еще раз не имеет смысла
         if (event.isOverloaded && !isSlowdown) {
@@ -135,9 +135,19 @@ public class ConfigurableWeight
             player.addPotionEffect(new EndlessPotionEffect(Potion.moveSlowdown.id, 2));
         } else if (!event.isOverloaded && isSlowdown) {
             // Удаляем бесконечный эффект замедения
-            EndlessPotionEffect endlessPotionEffect = (EndlessPotionEffect) player.getActivePotionEffect(Potion.moveSlowdown);
-            MinecraftForge.EVENT_BUS.unregister(endlessPotionEffect);
             player.removePotionEffect(Potion.moveSlowdown.id);
+        }
+    }
+
+    // Убираем бесконечное замедление при смене провайдера
+    // onOverload() наложит эффект еще раз, если был включен провайдер-наследник
+    @SubscribeEvent
+    public void onWeightProviderChaged(WeightProviderChangedEvent.Pre event) {
+        if (event.deactivatedProvider instanceof ConfigurableWeightProvider) {
+            for (EntityPlayer player : (List<EntityPlayer>) event.world.playerEntities) {
+                if (EndlessPotionEffect.isPotionActive(player, Potion.moveSlowdown))
+                    player.removePotionEffect(Potion.moveSlowdown.id);
+            }
         }
     }
 

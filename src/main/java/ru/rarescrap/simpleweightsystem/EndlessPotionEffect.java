@@ -1,6 +1,9 @@
 package ru.rarescrap.simpleweightsystem;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraftforge.common.MinecraftForge;
 import ru.rarescrap.weightapi.event.WeightProviderChangedEvent;
@@ -20,7 +23,6 @@ public class EndlessPotionEffect extends PotionEffect {
     public EndlessPotionEffect(int potionID, int amplifier, boolean isAmbient) {
         super(potionID, 1, amplifier, isAmbient);
         getCurativeItems().clear(); // Убираем возможность снять эффект молоком (или другим лекарством)
-        MinecraftForge.EVENT_BUS.register(this);
     }
 
     public EndlessPotionEffect(PotionEffect potionEffect) {
@@ -32,13 +34,14 @@ public class EndlessPotionEffect extends PotionEffect {
         return this.duration;
     }
 
-    // Эффект бесконечного замедления работает только для ConfigurableWeightProvider.
-    // Поэтому убираем эффект, если новая система веса - не ConfigurableWeightProvider.
-    @SubscribeEvent
-    public void onWeightProviderChanged(WeightProviderChangedEvent.Pre event) {
-        if (event.currentProvider instanceof ConfigurableWeightProvider) return;
+    public static EndlessPotionEffect get(EntityLivingBase entityLivingBase, Potion potion) {
+        PotionEffect effect = entityLivingBase.getActivePotionEffect(potion);
+        if (effect instanceof EndlessPotionEffect)
+            return (EndlessPotionEffect) effect;
+        return null;
+    }
 
-        this.duration = 0; // В следующим тике эффект закончится
-        MinecraftForge.EVENT_BUS.unregister(this);
+    public static boolean isPotionActive(EntityLivingBase entityLivingBase, Potion potion) {
+        return get(entityLivingBase, potion) != null;
     }
 }
