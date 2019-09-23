@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        jcenter()
         mavenCentral()
         maven {
             name = "forge"
@@ -12,21 +13,21 @@ buildscript {
     }
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.1'  // 1.8.4 не юзается, т.к. он не работает нифига
     }
 }
 
 repositories {
-    maven {
-        url = "https://dl.bintray.com/rarescrap/minecraft"
-    }
+    maven { url = "https://dl.bintray.com/rarescrap/minecraft" }
 }
 
 apply plugin: 'forge'
 
-version = "0.2.0"
+version = "0.4.0"
 group= "ru.rarescrap.configurableweight" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "configurableweight"
 def shortMCVersion = "1.7.10"
+def publicationVersion = version+'_1.7.10'
 
 minecraft {
     version = "$shortMCVersion-10.13.4.1614-1.7.10"
@@ -43,7 +44,7 @@ dependencies {
     //compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
     //compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env
 
-    compile "ru.rarescrap.weightapi:weightapi:0.2.0_$shortMCVersion"
+    compile "ru.rarescrap.weightapi:weightapi:0.4.0_$shortMCVersion:dev"
     
     // for more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
@@ -71,6 +72,60 @@ processResources
     }
 }
 
+// Собираем бинарник мода без обфускации. Рабочий вариант, в отличие от оф. доков из ForgeGradle
+task deobfJar(type: Jar) {
+    classifier "dev"
+    from sourceSets.main.output
+}
+
+// Формирует jar'ник с доками
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+// Формирует jar'ник с исходниками
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+// Подготавливает maven-публикацию, которая будет использоваться в bintray
+// Именно тут определяются артефакты для публикации
+apply plugin: 'maven-publish'
+publishing {
+    publications {
+        BintrayPublication(MavenPublication) {
+            //from components.java // Артефакты по умолчанию. Отлючаем их, т.к. нам нужно артефакт main-модуля заменить на артефакт от api-модуля
+            groupId group
+            artifactId archivesBaseName
+            version publicationVersion
+            artifact deobfJar
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
+// Публикация либы в bintray/jcenter
+apply plugin: 'com.jfrog.bintray'
+bintray {
+    user = 'rarescrap'
+    key = System.getenv('BINTRAY_KEY')
+    publications = ['BintrayPublication']
+    override = true
+    pkg {
+        repo = 'minecraft'
+        name = 'ConfigurableWeightSystem'
+        licenses = ['GPL-3.0']
+        vcsUrl = 'https://github.com/RareScrap/ConfigurableWeight.git'
+        version {
+            name = publicationVersion
+            released  = new Date()
+        }
+    }
+}
+
 jar {
     manifest {
         attributes 'FMLAT': archivesBaseName + '_at.cfg'
@@ -78,3 +133,8 @@ jar {
 }
 
 idea { module { inheritOutputDirs = true } }
+
+// Поддержка руских букв в доках
+javadoc { options.encoding = 'UTF-8' }
+// Устраняет ошибки и предупреждения компиляции из-за русских комментов
+tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }

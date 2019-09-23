@@ -33,15 +33,16 @@ import ru.rarescrap.weightapi.event.WeightChangedEvent;
 import ru.rarescrap.weightapi.event.WeightProviderChangedEvent;
 
 import java.io.File;
+import java.util.List;
 
 import static ru.rarescrap.simpleweightsystem.Utils.calculateAllowingStackSize;
 import static ru.rarescrap.simpleweightsystem.Utils.drawCenteredStringWithoutShadow;
 
-@Mod(modid = ConfigurableWeight.MODID, version = ConfigurableWeight.VERSION, dependencies = "required-after:weightapi@0.4.0")
+@Mod(modid = ConfigurableWeight.MODID, version = ConfigurableWeight.VERSION, dependencies = "required-after:weightapi@[0.4.0]")
 public class ConfigurableWeight
 {
     public static final String MODID = "configurableweight";
-    public static final String VERSION = "0.2.0";
+    public static final String VERSION = "0.4.0";
 
     public static final SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(MODID.toLowerCase());
 
