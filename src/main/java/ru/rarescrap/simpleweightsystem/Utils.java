@@ -11,7 +11,7 @@ public class Utils {
     public static int calculateAllowingStackSize(ItemStack itemStack, IInventory inventory, Entity owner, double limit) {
         ItemStack copy = itemStack.copy();
         for (; copy.stackSize > 0; copy.stackSize--) {
-            double weight = WeightRegistry.getWeightProvider().getWeight(copy, inventory, owner);
+            double weight = WeightRegistry.getActiveWeightProvider().getWeight(copy, inventory, owner);
             if (weight <= limit) return copy.stackSize;
         }
         return 0;

@@ -10,6 +10,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -25,11 +26,17 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ru.rarescrap.simpleweightsystem.ConfigurableWeight.NETWORK;
+
+/**
+ * Система веса с возможностью задавать вес каждого предмета через конфигурационный файл.
+ * За счет синхронизации с клиентом может работать также на стороне клиенте без доступа к серверу.
+ */
 public class ConfigurableWeightProvider implements IWeightProvider {
 
-    private Configuration config;
-    private Map<Item, Double> weightStorage = new HashMap<Item, Double>();
-    private double defaultWeight;
+    private Configuration config; // TODO: ненужно поле
+    protected Map<Item, Double> weightStorage = new HashMap<Item, Double>();
+    protected double defaultWeight;
 
     @SideOnly(Side.CLIENT)
     public ConfigurableWeightProvider(Map<Item, Double> weightStorage, double defaultWeight) {
@@ -42,7 +49,7 @@ public class ConfigurableWeightProvider implements IWeightProvider {
         readConfig();
     }
 
-    private void readConfig() {
+    protected void readConfig() {
         defaultWeight = config.get("default", "weight", 1).getDouble();
         for (String categoryName : config.getCategoryNames()) {
             // Обрабатываем категорию с дефолтными настройками
@@ -57,7 +64,7 @@ public class ConfigurableWeightProvider implements IWeightProvider {
         }
     }
 
-    private void readItems(ConfigCategory itemCategory) {
+    protected void readItems(ConfigCategory itemCategory) {
         for (Property itemProperty : itemCategory.getOrderedValues()) {
             Item item = GameRegistry.findItem(itemCategory.getName(), itemProperty.getName());
             if (item == null) throw new RuntimeException("There no item with name \"" + itemProperty.getName() + "\""); // Чтобы юзеру было понятнее
@@ -117,19 +124,21 @@ public class ConfigurableWeightProvider implements IWeightProvider {
         return event.maxWeight;
     }
 
+    @Override
+    public void sync(EntityPlayerMP player) {
+        NETWORK.sendTo(new SyncMessage(this), player);
+    }
+
     /**
      * Пакет, доставляющий таблицу весов на клиент
      */
     public static class SyncMessage implements IMessage {
-        @SideOnly(Side.CLIENT)
-        ConfigurableWeightProvider clientWeightProvider;
-        ConfigurableWeightProvider serverWeightProvider;
+        ConfigurableWeightProvider weightProvider;
 
-        // for reflection new instance
-        public SyncMessage() {}
+        public SyncMessage() {} // for reflection newInstance()
 
         public SyncMessage(ConfigurableWeightProvider serverWeightProvider) {
-            this.serverWeightProvider = serverWeightProvider;
+            this.weightProvider = serverWeightProvider;
         }
 
         @Override
@@ -142,28 +151,25 @@ public class ConfigurableWeightProvider implements IWeightProvider {
                 weightStorage.put(item, weight);
             }
             double defaultWeight = buf.readDouble();
-            clientWeightProvider = new ConfigurableWeightProvider(weightStorage, defaultWeight);
+            weightProvider = new ConfigurableWeightProvider(weightStorage, defaultWeight);
         }
 
         @Override
         public void toBytes(ByteBuf buf) {
-            ByteBufUtils.writeVarInt(buf, serverWeightProvider.weightStorage.size(), 1);
-            for (Map.Entry<Item, Double> entry : serverWeightProvider.weightStorage.entrySet()) {
+            ByteBufUtils.writeVarInt(buf, weightProvider.weightStorage.size(), 1);
+            for (Map.Entry<Item, Double> entry : weightProvider.weightStorage.entrySet()) {
                 ByteBufUtils.writeVarShort(buf, Item.getIdFromItem(entry.getKey()));
                 buf.writeDouble(entry.getValue());
             }
-            buf.writeDouble(serverWeightProvider.defaultWeight);
+            buf.writeDouble(weightProvider.defaultWeight);
         }
     }
 
     public static class MessageHandler implements IMessageHandler<SyncMessage, IMessage> {
-
         @SideOnly(Side.CLIENT)
         @Override
         public IMessage onMessage(SyncMessage message, MessageContext ctx) {
-            if (WeightRegistry.getWeightProvider() == null ||
-                    WeightRegistry.getWeightProvider() != ConfigurableWeight.configurableWeightProvider) // Эта проверку нужна, когда игрок в сингле
-                WeightRegistry.registerWeightProvider(message.clientWeightProvider);
+            WeightRegistry.applyToClient(message.weightProvider);
             return null;
         }
     }
