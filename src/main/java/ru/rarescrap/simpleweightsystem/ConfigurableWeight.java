@@ -17,17 +17,14 @@ import net.minecraft.client.gui.inventory.GuiContainerCreative;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.InventoryEffectRenderer;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.event.entity.player.PlayerOpenContainerEvent;
 import ru.rarescrap.weightapi.WeightRegistry;
 import ru.rarescrap.weightapi.event.WeightChangedEvent;
 import ru.rarescrap.weightapi.event.WeightProviderChangedEvent;
@@ -38,11 +35,11 @@ import java.util.List;
 import static ru.rarescrap.simpleweightsystem.Utils.calculateAllowingStackSize;
 import static ru.rarescrap.simpleweightsystem.Utils.drawCenteredStringWithoutShadow;
 
-@Mod(modid = ConfigurableWeight.MODID, version = ConfigurableWeight.VERSION, dependencies = "required-after:weightapi@[0.4.0]")
+@Mod(modid = ConfigurableWeight.MODID, version = ConfigurableWeight.VERSION, dependencies = "required-after:weightapi@[0.5.0]")
 public class ConfigurableWeight
 {
     public static final String MODID = "configurableweight";
-    public static final String VERSION = "0.4.0";
+    public static final String VERSION = "0.5.0";
 
     public static final SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(MODID.toLowerCase());
 
@@ -64,27 +61,6 @@ public class ConfigurableWeight
             WeightRegistry.registerWeightProvider(MODID, configurableWeightProvider = new ConfigurableWeightProvider(configFile));
             FMLCommonHandler.instance().bus().register(configurableWeightProvider); // TODO: Разрегистрировать при удалении/замене в WeightRegistry
         } else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
-
-    }
-
-    // Присоединяем игрокам трекер инвентаря
-    @SubscribeEvent
-    public void onEntityConstructing(EntityEvent.EntityConstructing event) {
-        if (event.entity instanceof EntityPlayerMP && PlayerWeightTracker.get((EntityPlayerMP) event.entity) == null)
-            PlayerWeightTracker.register((EntityPlayerMP) event.entity);
-    }
-
-    // И присоединяем его к открытым контейнерам
-    @SubscribeEvent
-    public void onPlayerOpenContainer(PlayerOpenContainerEvent e) {
-        PlayerWeightTracker tracker = PlayerWeightTracker.get((EntityPlayerMP) e.entityPlayer);
-        /* Довольно узкое место. Дело в том, что PlayerOpenContainerEvent не совсем соотстветвует своему
-         * описанию. Это скорее "CanInteractWithContainerEvent". Это из-за того, что этот евент по сути
-         * выбрасывается каждый тик. А открываться контейнер каждый тик не может по логике.
-         * Однако и этот "ущербный" эвент можно использовать в нужном ключе (в данном случае, для присоединения
-         * слушателя изменения инвентаря (ICrafting). Только нужно позаботиться, чтобы он не добавлялся дважды. */
-        if (!e.entityPlayer.openContainer.crafters.contains(tracker))
-            tracker.attachListener(); // TODO: а если canInteractWith == false?
     }
 
     @SubscribeEvent
