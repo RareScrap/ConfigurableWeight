@@ -24,7 +24,7 @@ repositories {
 apply from: "$rootDir/gradle/mcforge.gradle"
 apply from: "$rootDir/gradle/bintray.gradle"
 
-version = "0.4.0_1.7.10"
+version = "0.5.0_1.7.10"
 group= "ru.rarescrap.configurableweight" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "configurableweight"
 
@@ -39,8 +39,8 @@ dependencies {
     //compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
     //compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env
 
-    compile "ru.rarescrap.weightapi:weightapi:0.4.0_1.7.10:dev"
-    compile "ru.rarescrap.weightapi:weightapi-case1:0.4.0_1.7.10:dev"
+    compile "ru.rarescrap.weightapi:weightapi:0.5.0_1.7.10:dev"
+    compile "ru.rarescrap.weightapi:weightapi-case1:0.5.0_1.7.10:dev"
     
     // for more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
