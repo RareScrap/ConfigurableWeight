@@ -59,7 +59,6 @@ public class ConfigurableWeight
         File configFile = new File(Loader.instance().getConfigDir(), MODID+".cfg");
         if (configFile.exists()) {
             WeightRegistry.registerWeightProvider(MODID, configurableWeightProvider = new ConfigurableWeightProvider(configFile));
-            FMLCommonHandler.instance().bus().register(configurableWeightProvider); // TODO: Удалить т.к. оно больше не принимает евентов
         } else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
     }
 
