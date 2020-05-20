@@ -151,7 +151,7 @@ public class ConfigurableWeightProvider implements IWeightProvider {
                 weightStorage.put(item, weight);
             }
             double defaultWeight = buf.readDouble();
-            weightProvider = new ConfigurableWeightProvider(weightStorage, defaultWeight);
+            weightProvider = constructWeightProvider(weightStorage, defaultWeight);
         }
 
         @Override
@@ -163,8 +163,17 @@ public class ConfigurableWeightProvider implements IWeightProvider {
             }
             buf.writeDouble(weightProvider.defaultWeight);
         }
+
+        protected ConfigurableWeightProvider constructWeightProvider(Map<Item, Double> weightStorage, double defaultWeight) {
+            return new ConfigurableWeightProvider(weightStorage, defaultWeight);
+        }
+
+        public ConfigurableWeightProvider getWeightProvider() {
+            return weightProvider;
+        }
     }
 
+    // TODO: Наследники вынуждены копипастить это. Исправить!
     public static class MessageHandler implements IMessageHandler<SyncMessage, IMessage> {
         @SideOnly(Side.CLIENT)
         @Override

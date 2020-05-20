@@ -39,7 +39,7 @@ import static ru.rarescrap.simpleweightsystem.Utils.drawCenteredStringWithoutSha
 public class ConfigurableWeight
 {
     public static final String MODID = "configurableweight";
-    public static final String VERSION = "0.5.0";
+    public static final String VERSION = "0.5.1";
 
     public static final SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(MODID.toLowerCase());
 
@@ -54,12 +54,11 @@ public class ConfigurableWeight
     }
 
     // Читам конфиг веса на сервере
-    @EventHandler
+    @EventHandler // TODO: Наследники вынуждены копипастить это. Исправить!
     public void onServerStart(FMLServerAboutToStartEvent event) {
         File configFile = new File(Loader.instance().getConfigDir(), MODID+".cfg");
         if (configFile.exists()) {
             WeightRegistry.registerWeightProvider(MODID, configurableWeightProvider = new ConfigurableWeightProvider(configFile));
-            FMLCommonHandler.instance().bus().register(configurableWeightProvider); // TODO: Разрегистрировать при удалении/замене в WeightRegistry
         } else throw new RuntimeException("[ConfigurableWeight] Can't find config file. Weights not loaded!");
     }
 
